@@ -2,7 +2,8 @@
     VAS automated performance evaluation framework
     @author: Ji Jiahao
     @date created: 20190823
-    @last modified: 20190830
+    @last modified: 20190903
+    @version: v0.1
     @description: Handler that generally handles tests on VAS system.
     @features: 1. mlflow used as test tracking platform
                2. generate excel test reports
@@ -23,8 +24,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 class VAS_Test_Handler():
     def __init__(self, test_config=None):
         if not test_config:
-            test_config = os.path.dirname(
-                os.path.abspath(__file__)) + '/test_cfg.ini'
+            test_config = '/ext_vol/test_cfg.ini'
 
         self.config = ConfigParser(allow_no_value=True)
         self.config.read(test_config)
@@ -34,15 +34,14 @@ class VAS_Test_Handler():
         os.environ["MLFLOW_TRACKING_URI"] = self.get_config(
             ['ENVIRONMENT', 'MLFLOW_TRACKING_URI'])
 
-        self.test_dir = os.getcwd()
+        # self.test_dir = os.getcwd()
         self.vas_software_path = self.get_config(
             ['VAS SOFTWARE', 'PATH'])
-        sys.path.append(self.test_dir)
+        # sys.path.append(self.test_dir)
         sys.path.append(self.vas_software_path)
 
     def run(self):
-        test_list = self.get_test_list(self.get_config(
-            ['TEST DATA', 'DATA_SUMMARY_EXCEL_PATH']))
+        test_list = self.get_test_list(self.get_data_summary_file_path())
 
         '''change working dir'''
         os.chdir(self.vas_software_path)
@@ -127,14 +126,26 @@ class VAS_Test_Handler():
             result = result[key]
         return result
 
+    def get_data_summary_file_path(self):
+        summary_file_dir = self.get_config(
+            ['TEST DATA', 'DATA_SUMMARY_EXCEL_PATH'])
+        if not summary_file_dir.startswith('/'):
+            # relative path
+            if summary_file_dir.startswith('./'):
+                summary_file_dir = summary_file_dir[2:]
+            # test_file_dir = self.test_dir + '/' + test_file_dir
+            summary_file_dir = '/ext_vol/' + summary_file_dir
+
+        return summary_file_dir
+
     def get_file_path(self, file_name):
         test_file_dir = self.get_config(['TEST DATA', 'TEST_DATA_PATH'])
         if not test_file_dir.startswith('/'):
             # relative path
             if test_file_dir.startswith('./'):
                 test_file_dir = test_file_dir[2:]
-            test_file_dir = self.test_dir + '/' + test_file_dir
-
+            # test_file_dir = self.test_dir + '/' + test_file_dir
+            test_file_dir = '/ext_vol/' + test_file_dir
         file_path = os.path.join(
             test_file_dir, file_name)
         return file_path
