@@ -1,1 +1,6 @@
 .remote-sync.json
+*__pycache__
+
+# local debug
+local_debug/
+sample_experiment/test_cfg_local.ini

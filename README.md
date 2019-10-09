@@ -1,5 +1,5 @@
 # VAS Model Evaluation Framework
-VAS automated performance evaluation framework v0.1
+VAS automated performance evaluation framework v0.1.1 (dev)
 
 ## Features 
  - Automated and centralized VAS system experiment evaluation and logging platform. Simply plug in model, test data and config file. Then evaluate.
@@ -27,7 +27,16 @@ Run `nvidia-docker run --rm --network=host -v <path_to_experiment_folder>:/ext_v
  2. export the experiment data from mlflow web interface. 
  3. Collect artifact from /var/experiment_data/artifact
 
-## MySQL docker side note:
+## Version history
+
+### v0.1.1 
+ 1. added new evaluation metrics: mAP.
+ 2. redefine data summary columns.
+
+### v0.1
+ 1. first stable version
+
+### MySQL docker side note:
  - When launching mysql container, map the data storage to persistent local storage. So when the container is down, the experiment data won’t be lost. 
  - Backup /var/experiment_data/mysql frequently.
 
