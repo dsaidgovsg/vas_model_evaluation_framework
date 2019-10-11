@@ -3,10 +3,10 @@
     @author: Ji Jiahao
     @date created: 20190823
     @last modified: 20190911
-    @version: v0.1.1
-    @description: Handler that generally handles tests on VAS system.
+    @version: v0.2.0
+    @description: Handler that handles genreal tests on VAS system.
     @features: 1. mlflow used as test tracking platform
-               2. generate excel test reports
+               2. support scipt testing and docker image testing
 '''
 
 import os
@@ -24,14 +24,17 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 DEBUG = True
 
 
-class VAS_Test_Handler():
+class VASTestHandler():
     def __init__(self, test_config=None):
         if not test_config:
             if DEBUG:
-                test_config = '/ext_vol/vas_model_evaluation_framework/sample_experiment/test_cfg.ini'
+                test_config = '/ext_vol/test_api_test/test_cfg.ini'
             else:
                 test_config = '/ext_vol/test_cfg.ini'
 
+        if not os.path.exists(test_config):
+            raise ValueError(
+                'config file path not valid, config path: {}'.format(test_config))
         self.config = ConfigParser(allow_no_value=True)
         self.config.read(test_config)
 
@@ -53,23 +56,24 @@ class VAS_Test_Handler():
         ''' IMPT: change working dir'''
         os.chdir(self.vas_software_path)
 
-        predictor = self.init_test()
+        test_type = self.get_config(['TEST DATA', 'TEST_DATA_TYPE']).lower()
+        predictor = self.init_test(test_type)
 
-        if self.get_config(['TEST DATA', 'TEST_DATA_TYPE']).lower() == 'video':
+        if test_type == 'video':
             _ = self.conduct_test_video(test_list, predictor)
-        elif self.get_config(['TEST DATA', 'TEST_DATA_TYPE']).lower() == 'image':
+        elif test_type == 'image':
             _ = self.conduct_test_image(test_list, predictor)
 
         # self.__test_mlflow()
 
-    def init_test(self):
+    def init_test(self, test_type):
         '''
             - init_vas_model() - initialize model once and return the active session
         '''
         from predict import Predictor
         predictor = Predictor(self.vas_software_path)
         # model_init_start = time.time()
-        predictor.model_init()
+        predictor.model_init(test_type)
         # log_metric("model_init_time", time.time() - model_init_start)
         return predictor
 
@@ -86,8 +90,15 @@ class VAS_Test_Handler():
             run_name = self.get_config(['EXPERIMENT METADATA', 'RUN_NAME'])
             set_experiment(exp_name)
             with start_run(run_name=run_name):
-                result = predictor.model_infer(
-                    self.get_path('TEST_DATA_PATH', test['File_name']))
+                try:
+                    result = predictor.counter_model_infer(
+                        self.get_path('TEST_DATA_PATH', test['File_name']),
+                        roi_path=self.get_roi_path(test['File_name']))
+                    result['meta_test_status'] = 'successful'
+                except Exception as e:
+                    print(e)
+                    print('Test Failed. could not run inference on the test data.')
+                    result = {'meta_test_status': 'failed'}
 
                 test.update(result)
 
@@ -95,20 +106,21 @@ class VAS_Test_Handler():
                 for k, v in test.items():
                     if k.startswith('meta_'):
                         log_param(k[5:], v)
-                    elif not k.startswith('p_'):
+                    # elif not k.startswith('p_'):
+                    #     log_param(k, v)
+                    else:
                         log_param(k, v)
-                    # else:
-                    #         log_param(k, v)
 
-                metrics = eval_metrics_video(
-                    test_result=test,
-                    metrics_to_eval=self.get_metrics_to_eval(),
-                    annotation_path=self.get_path(
-                        'ANNOTATION_PATH', test['File_name'][:-3] + 'xml')
-                )
+                if result['meta_test_status'] == 'successful':
+                    metrics = eval_metrics_video(
+                        test_result=test,
+                        metrics_to_eval=self.get_metrics_to_eval(),
+                        # annotation_path=self.get_path(
+                        #     'ANNOTATION_PATH', test['File_name'][:-3] + 'xml')
+                    )
 
-                for k, v in metrics.items():
-                    log_metric(k, v)
+                    for k, v in metrics.items():
+                        log_metric(k, v)
 
         return test_list
 
@@ -132,7 +144,7 @@ class VAS_Test_Handler():
                     print(
                         'Error: file not found, please check TEST_DATA_PATH in config')
                     raise Exception()
-                result = predictor.model_infer(file_path)
+                result = predictor.detector_model_infer(file_path)
 
                 # only collect the results, meta data is discarded
                 # test.update(result)
@@ -201,14 +213,29 @@ class VAS_Test_Handler():
             if file_dir.startswith('./'):
                 file_dir = file_dir[2:]
             # file_dir = self.test_dir + '/' + file_dir
-            file_dir = '/ext_vol/' + file_dir
+            if DEBUG:
+                file_dir = '/ext_vol/test_api_test/' + file_dir
+            else:
+                file_dir = '/ext_vol/' + file_dir
+
+        if not os.path.exists(file_dir):
+            raise ValueError('dir does not exist: {}'.format(file_dir))
 
         # if file name is not speficied, return dir
         if not file_name:
             return file_dir
 
         file_path = os.path.join(file_dir, file_name)
+        if not os.path.exists(file_path):
+            raise ValueError('file does not exist: {}'.format(file_path))
+        print(file_path)
         return file_path
+
+    def get_roi_path(self, video_name):
+        roi_file_name = video_name[:video_name.rfind('_')] + '_roi.txt'
+        roi_file_path = self.get_path('TEST_DATA_ROI_PATH', roi_file_name)
+        print(roi_file_path)
+        return roi_file_path
 
     def get_metrics_to_eval(self):
         return [m.lower() for m, take in self.get_config(['METRICS']).items() if take == '1']
@@ -219,5 +246,5 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config_path', type=str,
                         default=None, help='config path')
     args = parser.parse_args()
-    th = VAS_Test_Handler(args.config_path)
+    th = VASTestHandler(args.config_path)
     th.run()

@@ -1,3 +1,5 @@
+# This dockerfile packages the source VAS model evaluator with the environment
+
 # base environment containing only the dependencies
 FROM localhost:5000/vas_test_framework:base_env
 
@@ -15,6 +17,3 @@ EXPOSE 5001
 # launch test
 WORKDIR /vas_test/
 CMD python3 VAS_test_handler.py
-
-
-
