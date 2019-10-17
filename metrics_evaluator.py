@@ -2,17 +2,19 @@ import sklearn.metrics as skmetrics
 import xml.etree.ElementTree as ETree
 from glob import glob
 import numpy as np
-import math
 
 
-def eval_metrics_video(test_result, metrics_to_eval, annotation_path='none'):
+def eval_metrics_video(test_result, metrics_to_eval, annotation_path='none', overall_metric=False):
     '''
         input: test results containing keys [gt_<v>, p_<v>] or,
                test results containing [p_<v>] and annotation path
         output: {name of metrics: evaluation result}
     '''
 
-    print('metrics to evaluate:')
+    if overall_metric:
+        print('overall metrics to evaluate:')
+    else:
+        print('metrics to evaluate:')
     print(metrics_to_eval)
 
     # sort out the test result, prepare for evaluation
@@ -29,18 +31,79 @@ def eval_metrics_video(test_result, metrics_to_eval, annotation_path='none'):
     # evaluate each of the metrics and save in a dictionary
     eval_result = {}
     for metric in metrics_to_eval:
-        if metric == 'explained_variance_score' and len(labels) > 0:
-            eval_result[metric] = explained_variance_score(
-                labels=labels, y_true=y_true, y_pred=y_pred)
+        if overall_metric:
+            # overall metrics
+            if 'explained_variance_score' in metric:
+                # score for each label class
+                for label_idx in range(len(labels)):
+                    eval_result[metric + '_' + labels[label_idx]] = explained_variance_score(
+                        labels=labels, y_true=y_true[label_idx], y_pred=y_pred[label_idx])
+                eval_result['overall_' + metric] = explained_variance_score(
+                    labels=labels, y_true=y_true, y_pred=y_pred)
+            elif 'f1_score' in metric:
+                eval_result.update(
+                    f1_score(labels=labels, y_true=y_true, y_pred=y_pred))
 
-            # TODO: add more metric eval support
-            # by elif metric == 'some other metric' then ...
+            else:
+                raise ValueError('Unsuppported metrics: {}'.format(metric))
         else:
-            print('Unsuppported metrics')
+            # individual metrices
+            if metric == 'explained_variance_score':
+                eval_result[metric] = explained_variance_score(
+                    labels=labels, y_true=y_true, y_pred=y_pred)
     return eval_result
 
 
-def explained_variance_score(labels, y_true, y_pred):
+def f1_score(labels, y_true, y_pred):
+    def count(gt, p, miss_or_false='miss'):
+        if miss_or_false == 'miss':
+            miss_count = gt - p
+            miss_count[miss_count < 0] = 0
+            return miss_count
+        elif miss_or_false == 'false':
+            false_count = p - gt
+            false_count[false_count < 0] = 0
+            return false_count
+
+    def precision(gt, false_count):
+        return np.sum(gt) / (np.sum(gt) + np.sum(false_count))
+
+    def recall(gt, miss_count):
+        return np.sum(gt) / (np.sum(gt) + np.sum(miss_count))
+
+    def f1(prec, rec):
+        return 2 * prec * rec / (prec + rec)
+
+    res = {}
+    gt_sum = 0
+    false_count_sum = 0
+    miss_count_sum = 0
+
+    for label_idx in range(len(labels)):
+        class_gt_array = np.array(y_true[label_idx])
+        class_p_array = np.array(y_pred[label_idx])
+
+        false_count = count(class_gt_array, class_p_array, 'false')
+        miss_count = count(class_gt_array, class_p_array, 'miss')
+
+        prec = precision(class_gt_array, false_count)
+        rec = recall(class_gt_array, miss_count)
+        res['precision_' + labels[label_idx]] = prec
+        res['recall_' + labels[label_idx]] = rec
+        res['f1_' + labels[label_idx]] = f1(prec, rec)
+
+        gt_sum += np.sum(class_gt_array)
+        false_count_sum += np.sum(false_count)
+        miss_count_sum += np.sum(miss_count)
+
+    res['overall_precision'] = precision(gt_sum, false_count_sum)
+    res['overall_recall'] = recall(gt_sum, miss_count_sum)
+    res['overall_f1'] = f1(res['overall_precision'], res['overall_recall'])
+
+    return res
+
+
+def explained_variance_score(labels, y_true, y_pred, multioutput='variance_weighted'):
     '''
         metrics evaluation method template
         input:
@@ -50,7 +113,7 @@ def explained_variance_score(labels, y_true, y_pred):
         the same index refers to the count/label for the same variable.
         output: evaluation results in float
     '''
-    return skmetrics.explained_variance_score(y_true=y_true, y_pred=y_pred)
+    return skmetrics.explained_variance_score(y_true=y_true, y_pred=y_pred, multioutput=multioutput)
 
 
 def eval_metrics_image_bb(test_result, metrics_to_eval, anno_folder_path):

@@ -7,6 +7,10 @@
     @description: Handler that handles genreal tests on VAS system.
     @features: 1. mlflow used as test tracking platform
                2. support scipt testing and docker image testing
+
+    @bug: 1. the way of calculating the explained variance score is wrong.
+
+    @enhancement: 1. create base class and inherit vas test handler for 1. video, 2. image
 '''
 
 import os
@@ -14,6 +18,7 @@ import sys
 from configparser import ConfigParser
 import pandas as pd
 from copy import deepcopy
+from datetime import datetime
 import time
 from metrics_evaluator import eval_metrics_video, eval_metrics_image_bb
 from mlflow import log_metric, log_param, start_run, set_experiment
@@ -28,8 +33,10 @@ class VASTestHandler():
     def __init__(self, test_config=None):
         if not test_config:
             if DEBUG:
+                # for debugging on dgx
                 test_config = '/ext_vol/test_api_test/test_cfg.ini'
             else:
+                # for deployment in docker image
                 test_config = '/ext_vol/test_cfg.ini'
 
         if not os.path.exists(test_config):
@@ -70,6 +77,8 @@ class VASTestHandler():
         '''
             - init_vas_model() - initialize model once and return the active session
         '''
+
+        self.overall_res = {'sheet_name': 'raw_results'}
         from predict import Predictor
         predictor = Predictor(self.vas_software_path)
         # model_init_start = time.time()
@@ -106,21 +115,38 @@ class VASTestHandler():
                 for k, v in test.items():
                     if k.startswith('meta_'):
                         log_param(k[5:], v)
+                        self.overall_res[k[5:]] = self.overall_res.get(
+                            k[5:], []) + [v]
                     # elif not k.startswith('p_'):
                     #     log_param(k, v)
                     else:
                         log_param(k, v)
+                        self.overall_res[k] = self.overall_res.get(k, []) + [v]
 
                 if result['meta_test_status'] == 'successful':
                     metrics = eval_metrics_video(
                         test_result=test,
-                        metrics_to_eval=self.get_metrics_to_eval(),
-                        # annotation_path=self.get_path(
-                        #     'ANNOTATION_PATH', test['File_name'][:-3] + 'xml')
+                        metrics_to_eval=self.get_metrics_to_eval(
+                            overall_metric=False),
+                        overall_metric=False
                     )
+
+                    # print metrics value
+                    print(metrics)
 
                     for k, v in metrics.items():
                         log_metric(k, v)
+
+        overall_metric = eval_metrics_video(
+            test_result=self.overall_res,
+            metrics_to_eval=self.get_metrics_to_eval(overall_metric=True),
+            overall_metric=True)
+
+        overall_metric = {k: [v] for k, v in overall_metric.items()}
+        overall_metric['sheet_name'] = 'metrics'
+
+        # save as xlsx
+        self.export_as_excel(self.overall_res, overall_metric)
 
         return test_list
 
@@ -237,8 +263,25 @@ class VASTestHandler():
         print(roi_file_path)
         return roi_file_path
 
-    def get_metrics_to_eval(self):
-        return [m.lower() for m, take in self.get_config(['METRICS']).items() if take == '1']
+    def get_metrics_to_eval(self, overall_metric=False):
+        all_metrics = [m.lower() for m, take in self.get_config(
+            ['METRICS']).items() if take == '1']
+        metrics_to_eval = [m for m in all_metrics if m.startswith('overall')] if overall_metric else \
+            [m[8:] for m in all_metrics if not m.startswith('overall')]
+        return metrics_to_eval
+
+    def export_as_excel(self, *argv):
+        now = str(datetime.now())
+        writer = pd.ExcelWriter(os.path.join(
+            self.get_config(['ENVIRONMENT', 'OVERALL_EXCEL_STAT_SAVE_PATH']),
+            'test_results_{}.xlsx'.format(now)),
+            engine='xlsxwriter')
+
+        for arg in argv:
+            sheet_name = arg.pop('sheet_name', None)
+            pd.DataFrame(arg).to_excel(writer, sheet_name=sheet_name)
+
+        writer.save()
 
 
 if __name__ == '__main__':
