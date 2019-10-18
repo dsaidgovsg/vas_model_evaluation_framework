@@ -1,10 +1,11 @@
 # VAS Model Evaluation Framework
-VAS automated performance evaluation framework v0.1.1 (dev)
+VAS automated performance evaluation framework v0.2 (dev)
 
-## Features 
+## Features
  - Automated and centralized VAS system experiment evaluation and logging platform. Simply plug in model, test data and config file. Then evaluate.
  - Mlflow with MySQL backend, which supports multiple evaluation task running at the same time.
- 
+ - Save raw test results with mlflow, meanwhile output overall metrics as excel in the path specified in test config file.
+
 ## Architecture
 <img src="https://github.com/dsaidgovsg/vas_model_evaluation_framework/blob/master/architecture_v0.1.jpg" width="300">
 
@@ -15,7 +16,7 @@ VAS automated performance evaluation framework v0.1.1 (dev)
 
 ## Prepare VAS Software and Test Data
 (Refer to sample experiment folder)
- - Prepare software with trained model and predict.py 
+ - Prepare software with trained model and predict.py
  - Prepare test data and data summary excel
  - Prepare test configuration test_cfg.ini
 
@@ -24,12 +25,17 @@ Run `nvidia-docker run --rm --network=host -v <path_to_experiment_folder>:/ext_v
 
 ## Visualize and Save Results
  1. logon to dgx through vnc, go to localhost:5001 in browser.
- 2. export the experiment data from mlflow web interface. 
+ 2. export the experiment data from mlflow web interface.
  3. Collect artifact from /var/experiment_data/artifact
+ 4. Collect overall results from test result folder, specified in the config file.
 
 ## Version history
 
-### v0.1.1 
+### v0.2 (under dev)
+ 1. added new evaluation metrics: overall f1 score.
+ 2. rectified the explained variance score calculation method, evs per test case is not valid.
+
+### v0.1.1
  1. added new evaluation metrics: mAP.
  2. redefine data summary columns.
 
@@ -37,11 +43,9 @@ Run `nvidia-docker run --rm --network=host -v <path_to_experiment_folder>:/ext_v
  1. first stable version
 
 ### MySQL docker side note:
- - When launching mysql container, map the data storage to persistent local storage. So when the container is down, the experiment data won’t be lost. 
+ - When launching mysql container, map the data storage to persistent local storage. So when the container is down, the experiment data won’t be lost.
  - Backup /var/experiment_data/mysql frequently.
 
 ### TODO:
- 1. support more evaluation metrics. 
- 2. allow to define customized metrics.
- 3. auto generate test report.
- 4. include support for artifact logging.
+ 1. build docker image for v0.2.
+ 2. properly integrate detector and modify the config file to include detector artifacts.

@@ -247,7 +247,7 @@ class VASTestHandler():
         if not os.path.exists(file_dir):
             raise ValueError('dir does not exist: {}'.format(file_dir))
 
-        # if file name is not speficied, return dir
+        # if file name is not specified, return dir
         if not file_name:
             return file_dir
 

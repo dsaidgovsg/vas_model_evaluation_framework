@@ -8,7 +8,7 @@
     @features: 1. mlflow used as test tracking platform
                2. support scipt testing and docker image testing
 
-    UNDER DEVELOPMENT
+    @ UNDER DEVELOPMENT
 '''
 
 import argparse
