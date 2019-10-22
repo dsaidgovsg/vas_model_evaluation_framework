@@ -1,5 +1,5 @@
 # VAS Model Evaluation Framework
-VAS automated performance evaluation framework v0.2 (dev)
+VAS automated performance evaluation framework v0.2
 
 ## Features
  - Automated and centralized VAS system experiment evaluation and logging platform. Simply plug in model, test data and config file. Then evaluate.
@@ -12,7 +12,7 @@ VAS automated performance evaluation framework v0.2 (dev)
 ## Test Environment Setup (this has been done on dgx)
 1. Launch mysql docker service if it is not up. Run `docker run --name mlflow_sql_backend --restart always -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=1 -d -v /var/experiment_data/mysql:/var/lib/mysql localhost:5000/mysql` to launch the DB server.
 2. Build mlflow server image and launch. Run `docker build -t localhost:5000/mlflow-server ./mlflow_server_docker/` to build. Run `docker run -d --name mlflow_server --restart always --net=host -v /var/experiment_data/artifact:/artifact localhost:5000/mlflow-server` to launch the mlflow server.
-2. Build Docker Image. Run `docker build -t localhost:5000/vas_test_framework:v0.1 .` on dgx to build docker image for the VAS model evaluation framework
+2. Build Docker Image. Run `docker build -t localhost:5000/vas_test_framework:v0.2 .` on dgx to build docker image for the VAS model evaluation framework
 
 ## Prepare VAS Software and Test Data
 (Refer to sample experiment folder)
@@ -21,7 +21,7 @@ VAS automated performance evaluation framework v0.2 (dev)
  - Prepare test configuration test_cfg.ini
 
 ## Launch Test
-Run `nvidia-docker run --rm --network=host -v <path_to_experiment_folder>:/ext_vol localhost:5000/vas_test_framework:v0.1` on dgx
+Run `nvidia-docker run --rm --network=host -v <path_to_experiment_folder>:/ext_vol localhost:5000/vas_test_framework:v0.2` on dgx
 
 ## Visualize and Save Results
  1. logon to dgx through vnc, go to localhost:5001 in browser.
@@ -31,7 +31,7 @@ Run `nvidia-docker run --rm --network=host -v <path_to_experiment_folder>:/ext_v
 
 ## Version history
 
-### v0.2 (under dev)
+### v0.2
  1. added new evaluation metrics: overall f1 score.
  2. rectified the explained variance score calculation method, evs per test case is not valid.
 
@@ -47,5 +47,5 @@ Run `nvidia-docker run --rm --network=host -v <path_to_experiment_folder>:/ext_v
  - Backup /var/experiment_data/mysql frequently.
 
 ### TODO:
- 1. build docker image for v0.2.
- 2. properly integrate detector and modify the config file to include detector artifacts.
+ 1. properly integrate detector, decouple the weights of detector from the docker images and modify the config file to include detector artifacts.
+ 2. develop another version to test dockerized version of the models

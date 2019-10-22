@@ -26,19 +26,20 @@ import argparse
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-DEBUG = True
-
 
 class VASTestHandler():
-    def __init__(self, test_config=None):
+    def __init__(self, debug=True, test_config=None):
+        self.debug_flag = debug
         if not test_config:
-            if DEBUG:
+            if self.debug_flag == 1:
                 # for debugging on dgx
                 test_config = '/ext_vol/test_api_test/test_cfg.ini'
             else:
                 # for deployment in docker image
                 test_config = '/ext_vol/test_cfg.ini'
 
+        print(self.debug_flag)
+        print(test_config)
         if not os.path.exists(test_config):
             raise ValueError(
                 'config file path not valid, config path: {}'.format(test_config))
@@ -51,8 +52,8 @@ class VASTestHandler():
             ['ENVIRONMENT', 'MLFLOW_TRACKING_URI'])
 
         # self.test_dir = os.getcwd()
-        self.vas_software_path = self.get_config(
-            ['VAS SOFTWARE', 'PATH'])
+        self.vas_software_path = self.get_path(
+            'PATH', config_header='VAS SOFTWARE')
         # sys.path.append(self.test_dir)
         sys.path.append(self.vas_software_path)
 
@@ -232,14 +233,14 @@ class VASTestHandler():
             log_param('dummy_param', 1)
             log_metric('dummy_metric', 2)
 
-    def get_path(self, data_type, file_name=None):
-        file_dir = self.get_config(['TEST DATA', data_type])
+    def get_path(self, data_type, file_name=None, config_header='TEST DATA'):
+        file_dir = self.get_config([config_header, data_type])
         if not file_dir.startswith('/'):
             # relative path
             if file_dir.startswith('./'):
                 file_dir = file_dir[2:]
             # file_dir = self.test_dir + '/' + file_dir
-            if DEBUG:
+            if self.debug_flag == 1:
                 file_dir = '/ext_vol/test_api_test/' + file_dir
             else:
                 file_dir = '/ext_vol/' + file_dir
@@ -273,7 +274,8 @@ class VASTestHandler():
     def export_as_excel(self, *argv):
         now = str(datetime.now())
         writer = pd.ExcelWriter(os.path.join(
-            self.get_config(['ENVIRONMENT', 'OVERALL_EXCEL_STAT_SAVE_PATH']),
+            self.get_path('OVERALL_EXCEL_STAT_SAVE_PATH',
+                          config_header='ENVIRONMENT'),
             'test_results_{}.xlsx'.format(now)),
             engine='xlsxwriter')
 
@@ -286,8 +288,10 @@ class VASTestHandler():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--debug', type=int,
+                        default=1, help='debug flag')
     parser.add_argument('-c', '--config_path', type=str,
                         default=None, help='config path')
     args = parser.parse_args()
-    th = VASTestHandler(args.config_path)
+    th = VASTestHandler(debug=args.debug, test_config=args.config_path)
     th.run()
