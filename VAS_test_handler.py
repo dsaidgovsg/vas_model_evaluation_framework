@@ -101,6 +101,7 @@ class VASTestHandler():
             set_experiment(exp_name)
             with start_run(run_name=run_name):
                 try:
+                    # print(self.get_roi_path(test['File_name']))
                     result = predictor.counter_model_infer(
                         self.get_path('TEST_DATA_PATH', test['File_name']),
                         roi_path=self.get_roi_path(test['File_name']))
@@ -253,15 +254,23 @@ class VASTestHandler():
             return file_dir
 
         file_path = os.path.join(file_dir, file_name)
-        if not os.path.exists(file_path):
-            raise ValueError('file does not exist: {}'.format(file_path))
+        # if not os.path.exists(file_path):
+        #     raise ValueError('file does not exist: {}'.format(file_path))
         print(file_path)
         return file_path
 
     def get_roi_path(self, video_name):
+        if self.get_config(['TEST DATA', 'TEST_DATA_ROI_PATH']).lower() == 'none':
+            return 'none'
+
         roi_file_name = video_name[:video_name.rfind('_')] + '_roi.txt'
         roi_file_path = self.get_path('TEST_DATA_ROI_PATH', roi_file_name)
-        print(roi_file_path)
+
+        if not os.path.exists(roi_file_path):
+            print('cannot find roi file, trying again')
+            roi_file_name = video_name[:video_name.rfind('.')] + '_roi.txt'
+            roi_file_path = self.get_path('TEST_DATA_ROI_PATH', roi_file_name)
+
         return roi_file_path
 
     def get_metrics_to_eval(self, overall_metric=False):
@@ -289,7 +298,7 @@ class VASTestHandler():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', type=int,
-                        default=1, help='debug flag')
+                        default=1, help='debug flag, Set to False when deploy.')
     parser.add_argument('-c', '--config_path', type=str,
                         default=None, help='config path')
     args = parser.parse_args()

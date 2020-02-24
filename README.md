@@ -7,7 +7,7 @@ VAS automated performance evaluation framework v0.2
  - Save raw test results with mlflow, meanwhile output overall metrics as excel in the path specified in test config file.
 
 ## Architecture
-<img src="https://github.com/dsaidgovsg/vas_model_evaluation_framework/blob/master/architecture_v0.1.jpg" width="300">
+<img src="https://github.com/dsaidgovsg/vas_model_evaluation_framework/blob/master/vas_test_framework.png" width="300">
 
 ## Test Environment Setup (this has been done on dgx)
 1. Launch mysql docker service if it is not up. Run `docker run --name mlflow_sql_backend --restart always -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=1 -d -v /var/experiment_data/mysql:/var/lib/mysql localhost:5000/mysql` to launch the DB server.

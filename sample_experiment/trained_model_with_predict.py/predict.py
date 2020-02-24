@@ -107,6 +107,8 @@ class Predictor():
         }
 
     def get_roi(self, roi_path):
+        if not roi_path or not os.path.exists(roi_path):
+            return None
         pts = []
         with open(roi_path) as file:
             for line in file:
