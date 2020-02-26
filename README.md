@@ -11,7 +11,7 @@ VAS automated performance evaluation framework v0.2
 
 ## Test Environment Setup (this has been done on dgx)
 1. Launch mysql docker service if it is not up. Run `docker run --name mlflow_sql_backend --restart always -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=1 -d -v /var/experiment_data/mysql:/var/lib/mysql localhost:5000/mysql` to launch the DB server.
-2. Build mlflow server image and launch. Run `docker build -t localhost:5000/mlflow-server ./mlflow_server_docker/` to build. Run `docker run -d --name mlflow_server --restart always --net=host -v /var/experiment_data/artifact:/artifact localhost:5000/mlflow-server` to launch the mlflow server.
+2. Build mlflow server image and launch. Run `docker build -t localhost:5000/mlflow_server ./mlflow_server_docker/` to build. Run `docker run -d --name mlflow_server --restart always --net=host -v /var/experiment_data/artifact:/artifact localhost:5000/mlflow-server` to launch the mlflow server.
 2. Build Docker Image. Run `docker build -t localhost:5000/vas_test_framework:v0.2 .` on dgx to build docker image for the VAS model evaluation framework
 
 ## Prepare VAS Software and Test Data
