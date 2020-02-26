@@ -10,4 +10,4 @@ RUN pip install mlflow mysql-connector-python mysqlclient
 
 EXPOSE 5001
 
-CMD mlflow server --backend-store-uri mysql://127.0.0.1:3306/mlflow_experiments --default-artifact-root /artifact -p 5001
+CMD mlflow server --backend-store-uri mysql://127.0.0.1:3306/mlflow_training_log --default-artifact-root /artifact -p 5001
