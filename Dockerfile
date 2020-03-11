@@ -9,11 +9,11 @@ COPY VAS_test_handler.py /vas_test/
 COPY metrics_evaluator.py /vas_test/
 
 # launch mlflow
-CMD mlflow server \
-	--backend-store-uri mysql://127.0.0.1:3306/mlflow_experiments \
-	--default-artifact-root /ext_vol/mlflow_artifact \
-	-p 5001 & \
-&& EXPOSE 5001
+# CMD mlflow server \
+#	--backend-store-uri mysql://127.0.0.1:3306/mlflow_experiments \
+#	--default-artifact-root /ext_vol/mlflow_artifact \
+#	-p 5001 & \
+# && EXPOSE 5001
 
 # launch test
 WORKDIR /vas_test/
