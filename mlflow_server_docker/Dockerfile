@@ -1,12 +1,12 @@
 # This dockerfile package packages the mlflow and launch the service
 
-FROM ubuntu:16.04
+FROM python:3.8
 
 RUN apt-get -y update && apt-get -y upgrade
-RUN apt-get -y install python3-pip python3-dev libmysqlclient-dev
+RUN apt-get -y install default-libmysqlclient-dev 
 
-RUN pip3 install --upgrade pip
-RUN pip3 install mlflow==1.7.0 mysql-connector-python mysqlclient
+RUN pip install --upgrade pip
+RUN pip install mlflow==1.7.0 mysql-connector-python mysqlclient
 
 EXPOSE 5001
 
