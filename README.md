@@ -9,6 +9,20 @@ VAS automated performance evaluation framework v0.2
 ## Architecture
 <img src="https://github.com/dsaidgovsg/vas_model_evaluation_framework/blob/master/vas_test_framework.png" width="300">
 
+## Local run setup
+1. Launch MySQL Docker service with:
+```
+docker pull mysql:latest
+docker run --name mlflow_sql_backend --restart always -p 3307:3306 -e MYSQL_DATABASE=mlflow_training_log -e MYSQL_ALLOW_EMPTY_PASSWORD=1 -d mysql
+```
+2. Launch mlflow Docker service by first building docker image when terminal is in this folder:
+```
+cd <vas_model_evaluation_framework location>
+docker build -t mlflow_v1.7_server ./mlflow_server_docker/
+docker run -d --name mlflow_server --restart always --link mlflow_sql_backend -p 5001:5001 -v /var/experiment_data/artifact:/artifact mlflow_v1.7_server
+```
+3. Go to `localhost:5001` to see mlflow UI.
+
 ## Test Environment Setup (this has been done on dgx)
 1. Launch mysql docker service if it is not up. Run `docker run --name mlflow_sql_backend --restart always -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=1 -d -v /var/experiment_data/mysql:/var/lib/mysql localhost:5000/mysql` to launch the DB server.
 2. Build mlflow server image and launch. Run `docker build -t localhost:5000/mlflow_v1.7_server ./mlflow_server_docker/` to build. Run `docker run -d --name mlflow_server --restart always --net=host -v /var/experiment_data/artifact:/artifact localhost:5000/mlflow_v1.7_server` to launch the mlflow server.
