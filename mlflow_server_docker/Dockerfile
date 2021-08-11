@@ -10,4 +10,4 @@ RUN pip install mlflow==1.7.0 mysql-connector-python mysqlclient
 
 EXPOSE 5001
 
-CMD LC_ALL=C.UTF-8 LANG=C.UTF-8 mlflow server --backend-store-uri mysql://127.0.0.1:3306/mlflow_training_log --default-artifact-root /artifact -p 5001
+CMD LC_ALL=C.UTF-8 LANG=C.UTF-8 mlflow server --backend-store-uri mysql://127.0.0.1:3307/mlflow_training_log --default-artifact-root /artifact -p 5001
